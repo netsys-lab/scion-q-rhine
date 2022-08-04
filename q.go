@@ -15,8 +15,6 @@
 package main
 
 import (
-	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"net"
@@ -25,10 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
 	"github.com/miekg/dns"
-	"github.com/netsec-ethz/scion-apps/pkg/pan"
-	"inet.af/netaddr"
+
+	"github.com/netsys-lab/sqnet"
 )
 
 // TODO(miek): serial in ixfr
@@ -283,19 +280,7 @@ func main() {
 				co.Conn, err = net.DialTimeout(tcp, nameserver, *timeoutDial)
 			}
 		} else {
-			tlsCfg := &tls.Config{
-				InsecureSkipVerify: true,
-				NextProtos:         []string{"hello-quic"},
-			}
-			fmt.Fprintf(os.Stderr, "%v", pan.MustParseUDPAddr(nameserver))
-			qconn, err := pan.DialQUIC(context.Background(), netaddr.IPPort{}, pan.MustParseUDPAddr(nameserver), nil, nil, "", tlsCfg, nil)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "SCION/QUIC Dialing "+nameserver+" failed: "+err.Error()+"\n")
-				return
-			}
-			var stream quic.Stream
-			stream, err = qconn.OpenStream()
-			co.Conn = &quicConn{qconn, stream}
+			co.Conn, err = sqnet.DialString(nameserver)
 		}
 
 		if err != nil {
@@ -709,42 +694,4 @@ func shortRR(r dns.RR) dns.RR {
 		}
 	}
 	return r
-}
-
-type quicConn struct {
-	conn   quic.Session
-	stream quic.Stream
-}
-
-func (q *quicConn) Read(b []byte) (int, error) {
-	return q.stream.Read(b)
-}
-
-func (q *quicConn) Write(b []byte) (int, error) {
-	return q.stream.Write(b)
-}
-
-func (q *quicConn) Close() error {
-	return q.stream.Close()
-}
-
-func (q *quicConn) LocalAddr() net.Addr {
-	return q.conn.LocalAddr()
-}
-
-func (q *quicConn) RemoteAddr() net.Addr {
-	return q.conn.RemoteAddr()
-}
-
-func (q *quicConn) SetDeadline(t time.Time) error {
-	return q.stream.SetDeadline(t)
-}
-
-func (q *quicConn) SetReadDeadline(t time.Time) error {
-	return q.stream.SetReadDeadline(t)
-
-}
-
-func (q *quicConn) SetWriteDeadline(t time.Time) error {
-	return q.stream.SetWriteDeadline(t)
 }
