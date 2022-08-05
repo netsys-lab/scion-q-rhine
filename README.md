@@ -1,4 +1,4 @@
-# scion-q-rhine
+# scion-rdig
 dig-like query tool for rhine with scion support
 
 ## upstream codebase
