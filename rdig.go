@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-
 	"github.com/netsys-lab/sqnet"
 )
 
@@ -40,6 +39,7 @@ var (
 	six          = flag.Bool("6", false, "use IPv6 only")
 	four         = flag.Bool("4", false, "use IPv4 only")
 	anchor       = flag.String("anchor", "", "use the DNSKEY in this file as trust anchor")
+	certificate  = flag.String("cert", "", "use the ca certificate in this file to validate rcerts")
 	tsig         = flag.String("tsig", "", "request tsig with key: [hmac:]name:key")
 	port         = flag.Int("port", 53, "port number to use")
 	laddr        = flag.String("laddr", "", "local address to use")
@@ -88,7 +88,14 @@ func main() {
 			dnskey = k
 		}
 	}
-
+	var cert []byte
+	if *certificate != "" {
+		if bytes, err := os.ReadFile(*certificate); err != nil {
+			fmt.Fprintf(os.Stderr, "Failure to open %s: %s\n", *certificate, err.Error())
+		} else {
+			cert = bytes
+		}
+	}
 	var nameserver string
 	for _, arg := range flag.Args() {
 		// If it starts with @ it is a nameserver
@@ -341,15 +348,17 @@ func main() {
 				shortenMsg(r)
 			}
 			if *rhine {
-				fmt.Printf("[RHINE] Checking rhine consistency\n")
-				if deleg, _, ok := extractDelegationFromMsg(r); ok {
-					if !verifyRhineDelegation(deleg) {
-						fmt.Printf("The delegation verify failed!")
-					} else {
-						dnskey = deleg.dnskey
+				if len(r.Answer) > 0 && r.Rcode == dns.RcodeSuccess {
+					fmt.Printf("[RHINE] Checking rhine consistency\n")
+					if roa, _, ok := extractROAFromMsg(r); ok {
+						if !verifyRhineROA(roa, cert) {
+							fmt.Printf("The ROA verify failed!")
+						} else {
+							dnskey = roa.dnskey
+						}
 					}
+					rhineRRSigCheck(r, dnskey)
 				}
-				rhineRRSigCheck(r, dnskey)
 			}
 
 			fmt.Printf("%v", r)
@@ -452,17 +461,19 @@ Query:
 			shortenMsg(r)
 		}
 		if *rhine {
-			fmt.Printf("[RHINE] Checking rhine consistency\n")
-			deleg, _, ok := extractDelegationFromMsg(r)
-			if !ok {
-				fmt.Printf("[RHINE] The response doesn't contain correct delegation!\n")
-			} else {
-				if !verifyRhineDelegation(deleg) {
-					fmt.Printf("[RHINE] The delegation verify failed!\n")
+			if len(r.Answer) > 0 && r.Rcode == dns.RcodeSuccess {
+				fmt.Printf("[RHINE] Checking rhine consistency\n")
+				roa, _, ok := extractROAFromMsg(r)
+				if !ok {
+					fmt.Printf("[RHINE] The response doesn't contain correct ROA!\n")
+				} else {
+					if !verifyRhineROA(roa, cert) {
+						fmt.Printf("[RHINE] The ROA verify failed!\n")
+					}
+					dnskey = roa.dnskey
 				}
-				dnskey = deleg.dnskey
+				rhineRRSigCheck(r, dnskey)
 			}
-			rhineRRSigCheck(r, dnskey)
 		}
 		fmt.Printf("%v", r)
 		fmt.Printf("\n;; query time: %.3d µs, server: %s(%s), size: %d bytes\n", rtt/1e3, nameserver, c.Net, r.Len())
