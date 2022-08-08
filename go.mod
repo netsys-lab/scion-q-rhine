@@ -61,3 +61,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	inet.af/netaddr v0.0.0-20210903134321-85fa6c94624e // indirect
 )
+
+replace github.com/miekg/dns v1.1.50 => github.com/loujie1/dns v1.1.51

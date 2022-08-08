@@ -1,5 +1,14 @@
-# scion-rdig
-dig-like query tool for rhine with scion support
+### Build
+```
+go build
+```
 
-## upstream codebase
-https://github.com/miekg/exdns
+### Query
+Enable rhine E2E validation with `-rhine` flag, also you need to specify the CA certificate file path with `-cert` flag.
+
+**Example**:
+```
+./rdig -port 10003 -rhine -cert=./testdata/certificate/CACert.pem @localhost www.google.com
+```
+
+
