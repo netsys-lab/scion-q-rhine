@@ -8,7 +8,7 @@ Enable rhine E2E validation with `-rhine` flag, also you need to specify the CA 
 
 **Example**:
 ```
-./rdig -port 10003 -rhine -cert=./testdata/certificate/CACert.pem @localhost www.google.com
+./rdig -port 10003 -rhine -cert=./testdata/certificate/CACert.pem @localhost www1.rhine-test.com
 ```
 
 
