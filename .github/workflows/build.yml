@@ -23,7 +23,7 @@ jobs:
       env:
         CGO_ENABLED: "0"
     - name: Save binaries
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
-        name: binary
         path: rdig
+        name: rdig
