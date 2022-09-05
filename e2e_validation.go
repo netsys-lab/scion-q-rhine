@@ -96,7 +96,7 @@ func extractROAFromMsg(msg *dns.Msg) (roa *ROA, domain string, ok bool) {
 		keySig *dns.RRSIG
 		dsp    *dns.TXT
 	)
-	for _, r := range msg.Extra {
+	for _, r := range append(msg.Answer, msg.Extra...) {
 		switch r.Header().Rrtype {
 		case dns.TypeDNSKEY:
 			dnskey = r.(*dns.DNSKEY)
