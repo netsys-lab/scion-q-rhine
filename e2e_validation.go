@@ -96,6 +96,7 @@ func extractROAFromMsg(msg *dns.Msg) (roa *ROA, domain string, ok bool) {
 		keySig *dns.RRSIG
 		dsp    *dns.TXT
 	)
+
 	for _, r := range append(msg.Answer, msg.Extra...) {
 		switch r.Header().Rrtype {
 		case dns.TypeDNSKEY:
@@ -115,7 +116,7 @@ func extractROAFromMsg(msg *dns.Msg) (roa *ROA, domain string, ok bool) {
 		}
 	}
 	if rcert == nil || dnskey == nil || keySig == nil {
-		fmt.Printf("[RHINE] ;? Correct ROA not found in Msg\n")
+		fmt.Printf("[RHINE] ;? Correct ROA not found in Msg:\n%+v", msg)
 		if rcert == nil {
 			fmt.Printf("[RHINE] ;? RCert is null\n")
 		}
