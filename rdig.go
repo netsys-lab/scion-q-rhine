@@ -17,6 +17,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strconv"
@@ -327,11 +328,23 @@ func main() {
 				fmt.Fprintf(os.Stderr, ";; %s\n", err.Error())
 				continue
 			}
-			r, err := co.ReadMsg()
+
+			//r, err := co.ReadMsg()
+			buf := make([]byte, 8192)
+			n, err := io.ReadFull(co, buf)
 			if err != nil {
+				fmt.Fprintf(os.Stderr, ";; ERROR! %s", err)
+				continue
+			} else {
+				fmt.Fprintf(os.Stderr, ";; response size: %d bytes\n", n)
+			}
+			r := new(dns.Msg)
+			r.Unpack(buf)
+
+			/*if err != nil {
 				fmt.Fprintf(os.Stderr, ";; %s\n", err.Error())
 				continue
-			}
+			}*/
 			rtt := time.Since(then)
 			if r.Id != m.Id {
 				fmt.Fprintf(os.Stderr, "Id mismatch\n")
